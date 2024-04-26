@@ -3,8 +3,11 @@ package com.bintics.products.service;
 import com.bintics.products.config.RabbitMQConfig;
 import com.bintics.products.dto.ProductRequest;
 import com.bintics.products.dto.ProductResponse;
+import com.bintics.products.model.ProductCreatedEvent;
+import com.bintics.products.model.ProductDocument;
 import com.bintics.products.model.ProductModel;
-import com.bintics.products.repository.ProductsRepository;
+import com.bintics.products.repository.ProductDocumentRepository;
+import com.bintics.products.repository.ProductEntityRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
@@ -23,7 +26,9 @@ public class ProductsServiceImpl implements ProductsService {
 
     private final RabbitTemplate rabbitTemplate;
 
-    private final ProductsRepository repository;
+    private final ProductEntityRepository productEntityRepository;
+
+    private final ProductDocumentRepository productDocumentRepository;
 
     @Override
     public String create(ProductRequest request) {
@@ -32,14 +37,27 @@ public class ProductsServiceImpl implements ProductsService {
         Instant instant = now.atZone(ZoneId.systemDefault()).toInstant();
         Date date = Date.from(instant);
         ProductModel model = new ProductModel(id, request.getName(), request.getPrice(), date, date);
-        this.repository.save(model);
-        this.rabbitTemplate.convertAndSend(RabbitMQConfig.topicExchangeName, RabbitMQConfig.queueKey, model);
+        this.productEntityRepository.save(model);
+        this.productDocumentRepository.save(new ProductDocument(
+                model.getId(),
+                model.getName(),
+                model.getPrice(),
+                model.getCreatedAt(),
+                model.getUpdatedAt()
+        ));
+        this.rabbitTemplate.convertAndSend(RabbitMQConfig.topicExchangeName, RabbitMQConfig.queueKey, new ProductCreatedEvent(
+                model.getId(),
+                model.getName(),
+                model.getPrice(),
+                model.getCreatedAt(),
+                model.getUpdatedAt()
+        ));
         return id;
     }
 
     @Override
     public List<ProductResponse> getAll() {
-        var listResponse = this.repository.findAll().stream()
+        var listResponse = this.productEntityRepository.findAll().stream()
                 .map(m -> new ProductResponse(
                         m.getId(),
                         m.getName(),
@@ -52,7 +70,7 @@ public class ProductsServiceImpl implements ProductsService {
 
     @Override
     public ProductResponse findById(String id) {
-        return this.repository.findById(id).map(prod -> new ProductResponse(
+        return this.productEntityRepository.findById(id).map(prod -> new ProductResponse(
                 prod.getId(),
                 prod.getName(),
                 prod.getPrice(),
@@ -63,20 +81,20 @@ public class ProductsServiceImpl implements ProductsService {
 
     @Override
     public void update(ProductRequest request) {
-        var model = this.repository.findById(request.getId()).orElseThrow();
+        var model = this.productEntityRepository.findById(request.getId()).orElseThrow();
         var now = LocalDateTime.now();
         Instant instant = now.atZone(ZoneId.systemDefault()).toInstant();
         Date date = Date.from(instant);
         model.setName(request.getName());
         model.setPrice(request.getPrice());
         model.setUpdatedAt(date);
-        this.repository.save(model);
+        this.productEntityRepository.save(model);
     }
 
     @Override
     public void delete(String id) {
-        var todo = this.repository.findById(id).orElseThrow();
-        this.repository.delete(todo);
+        var todo = this.productEntityRepository.findById(id).orElseThrow();
+        this.productEntityRepository.delete(todo);
     }
 
 }

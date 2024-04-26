@@ -25,3 +25,44 @@ spring:
     template:
       retry:
         max-attempts: 3
+
+
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+            loggerLevel: full
+          products-service:
+            url: http://localhost:8080/products
+
+resilience4j:
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        enableRandomizedWait: true  #Exponential Backoff + Jitter
+        exponentialBackoffMultiplier: 2
+    instances:
+      products-service:
+        baseConfig: default
+
+
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 6
+        minimumNumberOfCalls: 4 #despues de 4 fallas el circuito se abre
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3 #Llamadas permitidas cuando esta en estado semi-abierto
+        waitDurationInOpenState: PT30S #Una vez el circuito esta abierto, espera 30 segundos, pasado ese tiempo pasa al estado semi-abierto
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+    instances:
+      products-service:
+        baseConfig: default
