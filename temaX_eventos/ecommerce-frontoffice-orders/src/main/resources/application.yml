@@ -1,0 +1,27 @@
+server:
+  port: 8081
+
+app:
+  gateway:
+    products: http://localhost:8080/products
+
+spring:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+  datasource:
+    url: jdbc:mysql://localhost:3306/fo_ecommerce_orders
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    virtual-host: /
+    username: guest
+    password: guest
+    template:
+      retry:
+        max-attempts: 3
