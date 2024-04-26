@@ -1,4 +1,18 @@
 
 .DS_Store
 
+tema01_microservicio_todo/.idea/
+
 tema02_comun_sinc_y_balanceo/.idea/
+
+tema03_retry/.idea/
+
+tema04_idempotencia/.idea/
+
+tema05_circuitbreaker/.idea/
+
+tema06_balanceo_carga/.idea/
+
+temaX_eventos/.idea/
+
+temaX_monitoring/.idea/
